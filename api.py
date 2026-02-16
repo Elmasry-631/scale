@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def _parse_origins(value: str):
+
     if not value:
         return ["*"]
     return [origin.strip() for origin in value.split(",") if origin.strip()]
@@ -64,17 +65,24 @@ class HealthResponse(BaseModel):
 
 @app.on_event("startup")
 def on_startup():
+    """Start background reader when API process starts."""
     logger.info("Starting ScaleReader")
     scale_reader.start()
 
 
 @app.on_event("shutdown")
 def on_shutdown():
+    """Stop background reader when API process is shutting down."""
     logger.info("Stopping ScaleReader")
     scale_reader.stop()
 
 
-@app.get("/api/weight", response_model=WeightResponse | WeightPendingResponse)
+@app.get(
+    "/api/weight",
+    response_model=WeightResponse | WeightPendingResponse,
+    summary="Get latest scale reading",
+    description="Returns latest parsed weight from the serial scale, or pending error if no sample yet.",
+)
 def get_weight():
     """جلب آخر قراءة من الميزان Alfareed A2 كـ JSON."""
     data = scale_reader.get_latest_data()
@@ -83,7 +91,12 @@ def get_weight():
     return data
 
 
-@app.get("/api/health", response_model=HealthResponse)
+@app.get(
+    "/api/health",
+    response_model=HealthResponse,
+    summary="Health and diagnostics",
+    description="Reports service state, serial connection status, last sample timestamp, and last error.",
+)
 def health():
     """Endpoint للفحص السريع (هل الخدمة تعمل؟)."""
     status = scale_reader.get_status()

@@ -1,3 +1,5 @@
+"""Serial scale reader implementation with reconnect and status reporting."""
+
 import logging
 import os
 import time
@@ -10,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class ScaleReader:
+    """Read and parse weight values from a serial-connected scale device."""
+
     def __init__(self, port: str = "COM5", baudrate: int = 9600, timeout: float = 1.0):
         self.port = port
         self.baudrate = baudrate
@@ -22,6 +26,11 @@ class ScaleReader:
         self.last_error = None
 
     def connect(self):
+        """Attempt a single serial connection.
+
+        Returns:
+            bool: True when the serial connection is open, False otherwise.
+        """
         try:
             self.serial_conn = serial.Serial(
                 port=self.port,
@@ -58,6 +67,7 @@ class ScaleReader:
             return None
 
     def read_loop(self):
+        """Continuously read from serial connection and update latest weight."""
         while self.running:
             try:
                 if not self.serial_conn or not self.serial_conn.is_open:
@@ -87,6 +97,7 @@ class ScaleReader:
                 time.sleep(1)
 
     def start(self):
+        """Start the background reader thread if it is not already running."""
         if self.running:
             return
         self.running = True
@@ -95,10 +106,12 @@ class ScaleReader:
         logger.info("ScaleReader started")
 
     def get_latest_data(self):
+        """Return a thread-safe copy of the latest parsed scale reading."""
         with self.lock:
             return self.latest_data.copy()
 
     def get_status(self):
+        """Return reader runtime status and latest error context."""
         last_data = self.get_latest_data()
         return {
             "running": self.running,
@@ -109,6 +122,7 @@ class ScaleReader:
         }
 
     def stop(self):
+        """Stop reader loop and close serial resources safely."""
         self.running = False
         if self.thread and self.thread.is_alive():
             self.thread.join(timeout=2)
