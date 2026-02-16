@@ -1,5 +1,3 @@
-"""HTTP API layer for exposing serial scale readings."""
-
 import logging
 import os
 from typing import Optional
@@ -18,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def _parse_origins(value: str):
-    """Convert comma-separated origins env var to a list."""
+
     if not value:
         return ["*"]
     return [origin.strip() for origin in value.split(",") if origin.strip()]
